@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "author": "VirtualFriend",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp32",
+      "top": 50,
+      "left": 100,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    ["esp32:TX0", "$serialMonitor:RX", ""],
+    ["esp32:RX0", "$serialMonitor:TX", ""]
+  ],
+  "dependencies": {}
+}
