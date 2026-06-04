@@ -1,0 +1,8 @@
+Aprender
+
+- Cableado correcto del OBD2
+- Alimentación segura desde el coche
+- Comunicación CAN
+- Consultas OBD2 sobre CAN
+- Lectura de respuestas
+- Envío de datos por BLE al M5Stack

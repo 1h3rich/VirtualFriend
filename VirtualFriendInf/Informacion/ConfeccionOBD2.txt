@@ -1,0 +1,1118 @@
+# Manual para confeccionar un dongle OBD2 propio con ESP32-C3, SN65HVD230 y BLE
+
+## 1. Objetivo del manual
+
+El objetivo es construir un **dongle OBD2 propio** para un proyecto de copiloto virtual de coche.
+
+Este dongle se conectará al puerto OBD2 del coche, leerá datos básicos del vehículo mediante CAN/OBD2 y enviará esos datos por **BLE** al dispositivo principal del copiloto, que será un **M5Stack CoreS3**.
+
+La idea general es:
+
+```txt
+Coche
+↓
+Puerto OBD2 debajo del volante
+↓
+Dongle OBD2 propio
+↓ BLE
+M5Stack CoreS3
+↓
+Cara, voz, frases, IA y reacciones
+```
+
+El dongle no debe controlar el coche. Solo debe leer datos estándar.
+
+Datos iniciales que se quieren leer:
+
+```txt
+RPM
+Velocidad
+Temperatura del refrigerante
+Voltaje aproximado
+Códigos de error en una fase posterior
+```
+
+---
+
+## 2. Componentes disponibles
+
+Los materiales planteados para construir el dongle son:
+
+```txt
+ESP32-C3
+Módulo CAN SN65HVD230
+Cable OBD2 macho a cables abiertos
+Conversor DC-DC 12V a 5V
+Portafusible + fusible pequeño
+Cables Dupont
+Caja plástica pequeña
+Soldador
+Estaño
+Tubo termorretráctil
+Cinta aislante
+Multímetro
+Opcional: protoboard
+```
+
+El M5Stack CoreS3 no forma parte física del dongle. Será el receptor de los datos por BLE.
+
+---
+
+## 3. Función de cada componente
+
+### 3.1. ESP32-C3
+
+El ESP32-C3 será el cerebro del dongle.
+
+Funciones:
+
+```txt
+Leer datos del coche mediante CAN/OBD2
+Interpretar las respuestas recibidas
+Convertir datos crudos en valores útiles
+Enviar esos valores por BLE al M5Stack CoreS3
+```
+
+Ejemplo:
+
+```txt
+El coche responde con bytes crudos.
+El ESP32-C3 calcula: RPM = 1850.
+El ESP32-C3 envía por BLE: rpm = 1850.
+```
+
+---
+
+### 3.2. Módulo CAN SN65HVD230
+
+El SN65HVD230 es el transceptor CAN.
+
+El ESP32-C3 puede gestionar CAN/TWAI a nivel lógico, pero no puede conectarse directamente a los cables CAN del coche.
+
+El SN65HVD230 actúa como traductor eléctrico entre:
+
+```txt
+ESP32-C3
+↓
+SN65HVD230
+↓
+CAN-H / CAN-L del coche
+```
+
+Sin este módulo, el ESP32-C3 no puede comunicarse físicamente con el bus CAN del vehículo.
+
+---
+
+### 3.3. Cable OBD2 macho a cables abiertos
+
+Este cable sirve para enchufar el dongle al coche sin desmontar nada.
+
+Se conecta al puerto OBD2 del vehículo, normalmente debajo del volante.
+
+Los pines importantes son:
+
+```txt
+Pin 6  → CAN-H
+Pin 14 → CAN-L
+Pin 16 → +12V
+Pin 4  → GND / masa
+Pin 5  → GND / masa
+```
+
+No hay que fiarse de los colores del cable. Hay que identificar los pines con el multímetro o con el esquema del propio cable.
+
+---
+
+### 3.4. Conversor 12V a 5V
+
+El coche entrega 12V por el puerto OBD2. El ESP32-C3 no puede recibir 12V directamente.
+
+El conversor DC-DC baja la tensión:
+
+```txt
+12V del coche → 5V para el ESP32-C3
+```
+
+Debe medirse con multímetro antes de conectar el ESP32-C3.
+
+La salida correcta debe ser:
+
+```txt
+5,0V aproximadamente
+```
+
+Si la salida es 12V, se quemará el ESP32-C3.
+
+---
+
+### 3.5. Fusible y portafusible
+
+El fusible se coloca entre el positivo del OBD2 y el conversor DC-DC.
+
+Función:
+
+```txt
+Proteger el prototipo
+Evitar que un cortocircuito afecte al coche
+Evitar calentamiento de cables
+Evitar daños mayores en caso de fallo
+```
+
+Conexión:
+
+```txt
+OBD2 pin 16 +12V
+↓
+Fusible
+↓
+Conversor 12V a 5V
+```
+
+Fusible recomendado:
+
+```txt
+1A
+```
+
+También serían válidos:
+
+```txt
+500mA
+2A
+```
+
+No usar fusibles grandes como 10A, 20A o 30A para este circuito.
+
+---
+
+### 3.6. Cables Dupont
+
+Sirven para hacer conexiones rápidas durante el prototipo.
+
+Se usarán para conectar:
+
+```txt
+ESP32-C3 ↔ SN65HVD230
+SN65HVD230 ↔ cable OBD2
+Conversor 5V ↔ ESP32-C3
+```
+
+Para pruebas están bien. Para el montaje final dentro del coche, es mejor soldar y aislar las conexiones.
+
+---
+
+### 3.7. Caja plástica
+
+Sirve para meter el circuito dentro y evitar que quede suelto debajo del volante.
+
+Características recomendadas:
+
+```txt
+Plástica
+No metálica
+Aproximadamente 100 x 60 x 25 mm o 100 x 60 x 30 mm
+Con tapa
+Fácil de taladrar
+Con espacio para cables
+```
+
+No debe ser metálica porque puede provocar cortocircuitos o interferencias si algo toca donde no debe.
+
+---
+
+### 3.8. Multímetro
+
+Es imprescindible.
+
+Se usará para:
+
+```txt
+Comprobar la salida de 5V del conversor
+Identificar pines del cable OBD2
+Comprobar continuidad
+Detectar cortocircuitos
+Verificar GND común
+```
+
+No se debe conectar el prototipo al coche sin haber medido antes.
+
+---
+
+## 4. Arquitectura del dongle
+
+El dongle queda dividido en tres bloques:
+
+```txt
+1. Entrada desde el coche
+   - OBD2 pin 6 CAN-H
+   - OBD2 pin 14 CAN-L
+   - OBD2 pin 16 +12V
+   - OBD2 pin 4/5 GND
+
+2. Electrónica del dongle
+   - Fusible
+   - Conversor 12V a 5V
+   - ESP32-C3
+   - SN65HVD230
+
+3. Salida inalámbrica
+   - BLE hacia M5Stack CoreS3
+```
+
+Esquema general:
+
+```txt
+[Puerto OBD2 del coche]
+        ↓
+[Cable OBD2 macho a cables]
+        ↓
+[SN65HVD230 + ESP32-C3 + conversor 12V→5V]
+        ↓ BLE
+[M5Stack CoreS3]
+```
+
+---
+
+## 5. Conexión eléctrica detallada
+
+### 5.1. Alimentación
+
+La alimentación sale del puerto OBD2:
+
+```txt
+OBD2 pin 16 = +12V
+OBD2 pin 4/5 = GND
+```
+
+Conexión:
+
+```txt
+OBD2 pin 16 +12V
+↓
+Portafusible con fusible de 1A
+↓
+Entrada positiva del conversor 12V a 5V
+
+OBD2 pin 4/5 GND
+↓
+Entrada negativa del conversor
+```
+
+Salida del conversor:
+
+```txt
+Salida +5V del conversor → pin 5V/VIN del ESP32-C3
+Salida GND del conversor → GND del ESP32-C3
+```
+
+También debe compartirse GND con el SN65HVD230:
+
+```txt
+GND conversor
+↓
+GND ESP32-C3
+↓
+GND SN65HVD230
+```
+
+Todos los GND deben estar unidos.
+
+---
+
+### 5.2. Conexión CAN entre OBD2 y SN65HVD230
+
+Desde el cable OBD2:
+
+```txt
+OBD2 pin 6 CAN-H  → CANH del SN65HVD230
+OBD2 pin 14 CAN-L → CANL del SN65HVD230
+```
+
+No invertir CAN-H y CAN-L. Si se invierten, normalmente no funcionará.
+
+---
+
+### 5.3. Conexión entre ESP32-C3 y SN65HVD230
+
+El SN65HVD230 suele tener pines como:
+
+```txt
+VCC
+GND
+TXD / CTX
+RXD / CRX
+CANH
+CANL
+```
+
+La conexión conceptual es:
+
+```txt
+ESP32-C3 GPIO usado como CAN_TX → TXD / CTX del SN65HVD230
+ESP32-C3 GPIO usado como CAN_RX → RXD / CRX del SN65HVD230
+
+ESP32-C3 3V3 → VCC del SN65HVD230
+ESP32-C3 GND → GND del SN65HVD230
+```
+
+Importante: los pines concretos del ESP32-C3 pueden variar según la placa. Claude debe generar el código permitiendo configurar fácilmente los pines CAN_TX y CAN_RX.
+
+Ejemplo orientativo:
+
+```txt
+CAN_TX = GPIO5
+CAN_RX = GPIO4
+```
+
+Pero esto debe verificarse según el pinout real de la placa ESP32-C3 usada.
+
+---
+
+## 6. Esquema completo de cableado
+
+```txt
+OBD2 pin 16 +12V
+        ↓
+Portafusible 1A
+        ↓
+Entrada + del conversor 12V→5V
+
+OBD2 pin 4/5 GND
+        ↓
+Entrada - del conversor 12V→5V
+
+Salida +5V del conversor
+        ↓
+5V / VIN del ESP32-C3
+
+Salida GND del conversor
+        ↓
+GND del ESP32-C3
+        ↓
+GND del SN65HVD230
+
+ESP32-C3 3V3
+        ↓
+VCC del SN65HVD230
+
+ESP32-C3 CAN_TX
+        ↓
+TXD / CTX del SN65HVD230
+
+ESP32-C3 CAN_RX
+        ↓
+RXD / CRX del SN65HVD230
+
+OBD2 pin 6 CAN-H
+        ↓
+CANH del SN65HVD230
+
+OBD2 pin 14 CAN-L
+        ↓
+CANL del SN65HVD230
+```
+
+---
+
+## 7. Comprobaciones antes de conectar al coche
+
+Antes de conectar nada al vehículo:
+
+### 7.1. Comprobar el conversor
+
+Alimentar el conversor con una fuente de 12V si es posible.
+
+Medir salida con multímetro:
+
+```txt
+Salida esperada: 5,0V aproximadamente
+```
+
+No conectar el ESP32 si la salida no es correcta.
+
+---
+
+### 7.2. Comprobar cortocircuitos
+
+Con el multímetro en modo continuidad:
+
+```txt
+Comprobar que +5V y GND no están en corto
+Comprobar que +12V y GND no están en corto
+Comprobar que CAN-H y CAN-L no están en corto
+Comprobar que ningún cable pelado toca otro
+```
+
+---
+
+### 7.3. Verificar pines OBD2
+
+No confiar en colores.
+
+Identificar físicamente:
+
+```txt
+Pin 6
+Pin 14
+Pin 16
+Pin 4/5
+```
+
+El conector OBD2 tiene 16 pines. Hay que ubicar correctamente cada pin antes de soldar.
+
+---
+
+## 8. Primera prueba recomendada
+
+No empezar conectándolo todo al coche.
+
+Orden recomendado:
+
+### Prueba 1: ESP32-C3 por USB
+
+Objetivo:
+
+```txt
+Cargar un programa básico
+Ver logs por Serial Monitor
+Comprobar que la placa funciona
+```
+
+Ejemplo de log:
+
+```txt
+Dongle iniciado
+BLE iniciado
+CAN todavía no conectado
+```
+
+---
+
+### Prueba 2: SN65HVD230 conectado al ESP32-C3
+
+Objetivo:
+
+```txt
+Comprobar que el código TWAI/CAN inicializa sin errores
+```
+
+Todavía sin coche.
+
+---
+
+### Prueba 3: Conversor 12V a 5V
+
+Objetivo:
+
+```txt
+Comprobar que el conversor entrega 5V reales
+```
+
+No conectar el ESP32 hasta medir.
+
+---
+
+### Prueba 4: Alimentar ESP32 desde el conversor
+
+Objetivo:
+
+```txt
+ESP32-C3 alimentado desde 5V del conversor
+Programa arrancando correctamente
+Serial Monitor funcionando si se mantiene USB conectado solo para datos
+```
+
+Cuidado con alimentar a la vez por USB y por VIN/5V si la placa no lo gestiona bien. Para pruebas, si hay dudas, usar primero solo USB.
+
+---
+
+### Prueba 5: Conexión al OBD2 del coche
+
+Objetivo:
+
+```txt
+Conectar CAN-H, CAN-L, GND y alimentación
+Inicializar CAN
+Enviar una petición OBD2 simple
+Leer respuesta
+```
+
+Primera petición recomendada:
+
+```txt
+RPM
+```
+
+---
+
+## 9. Comunicación OBD2 básica
+
+Para leer datos básicos se puede usar OBD2 sobre CAN.
+
+La petición funcional estándar suele enviarse al ID:
+
+```txt
+0x7DF
+```
+
+Las respuestas suelen llegar desde:
+
+```txt
+0x7E8
+0x7E9
+0x7EA
+...
+```
+
+### 9.1. Leer RPM
+
+Petición:
+
+```txt
+ID: 0x7DF
+DATA: 02 01 0C 00 00 00 00 00
+```
+
+Significado:
+
+```txt
+02 = longitud de datos útiles
+01 = modo OBD2: datos actuales
+0C = PID de RPM
+```
+
+Respuesta típica:
+
+```txt
+ID: 0x7E8
+DATA: 04 41 0C A B 00 00 00
+```
+
+Cálculo:
+
+```txt
+RPM = ((A * 256) + B) / 4
+```
+
+---
+
+### 9.2. Leer velocidad
+
+Petición:
+
+```txt
+ID: 0x7DF
+DATA: 02 01 0D 00 00 00 00 00
+```
+
+Respuesta típica:
+
+```txt
+ID: 0x7E8
+DATA: 03 41 0D A 00 00 00 00
+```
+
+Cálculo:
+
+```txt
+Velocidad = A
+```
+
+Unidad:
+
+```txt
+km/h
+```
+
+---
+
+### 9.3. Leer temperatura del refrigerante
+
+Petición:
+
+```txt
+ID: 0x7DF
+DATA: 02 01 05 00 00 00 00 00
+```
+
+Respuesta típica:
+
+```txt
+ID: 0x7E8
+DATA: 03 41 05 A 00 00 00 00
+```
+
+Cálculo:
+
+```txt
+Temperatura = A - 40
+```
+
+Unidad:
+
+```txt
+°C
+```
+
+---
+
+## 10. Velocidad CAN inicial
+
+Para OBD2 por CAN en muchos coches modernos, la velocidad habitual es:
+
+```txt
+500 kbps
+```
+
+Primera configuración recomendada:
+
+```txt
+CAN speed = 500000
+```
+
+Si no hay respuesta, puede que haya que revisar:
+
+```txt
+CAN-H y CAN-L invertidos
+Masa mal conectada
+Pines CAN_TX/CAN_RX mal configurados
+Velocidad CAN incorrecta
+Coche sin contacto dado
+Fallo de alimentación
+Módulo CAN con terminación problemática
+```
+
+---
+
+## 11. Sobre la resistencia de terminación
+
+Algunos módulos SN65HVD230 incluyen resistencia de terminación de 120Ω.
+
+En un coche, el bus CAN ya suele estar terminado internamente. Añadir otra resistencia puede alterar el bus.
+
+Para prototipo puede funcionar, pero si hay problemas de comunicación se debe revisar si el módulo lleva resistencia de terminación fija.
+
+Claude debe tener esto en cuenta como posible causa de fallo.
+
+---
+
+## 12. Comunicación BLE hacia el M5Stack CoreS3
+
+El ESP32-C3 debe actuar como servidor BLE.
+
+El M5Stack CoreS3 actuará como cliente BLE.
+
+El dongle enviará datos limpios, no tramas CAN crudas.
+
+Formato recomendado para empezar:
+
+```json
+{
+  "rpm": 1850,
+  "speed": 72,
+  "coolant_temp": 91,
+  "status": "ok"
+}
+```
+
+También puede enviarse en formato de texto simple para facilitar el prototipo:
+
+```txt
+rpm=1850;speed=72;coolant=91
+```
+
+Para un principiante, el formato texto puede ser más fácil de depurar.
+
+---
+
+## 13. Separación de responsabilidades
+
+El dongle debe encargarse de:
+
+```txt
+Leer CAN
+Consultar OBD2
+Convertir bytes en valores reales
+Enviar datos por BLE
+```
+
+El M5Stack CoreS3 debe encargarse de:
+
+```txt
+Mostrar cara
+Cambiar expresiones
+Reproducir sonidos
+Decidir frases
+Usar IA/API en futuras fases
+Reaccionar a los datos recibidos
+```
+
+No conviene que el M5Stack interprete tramas CAN directamente. Es mejor que el dongle le pase datos ya limpios.
+
+---
+
+## 14. Estructura de software recomendada para el dongle
+
+Proyecto en C++ / Arduino Framework.
+
+Estructura sugerida:
+
+```txt
+virtualfriend/
+├── dongle_obd2/
+│   ├── src/
+│   │   ├── main.cpp
+│   │   ├── CanManager.h
+│   │   ├── CanManager.cpp
+│   │   ├── ObdReader.h
+│   │   ├── ObdReader.cpp
+│   │   ├── BleServer.h
+│   │   ├── BleServer.cpp
+│   │   ├── Config.h
+│   │   └── VehicleData.h
+│   └── platformio.ini
+```
+
+### Config.h
+
+Debe contener:
+
+```cpp
+#pragma once
+
+#define CAN_TX_PIN 5
+#define CAN_RX_PIN 4
+#define CAN_SPEED 500000
+
+#define BLE_DEVICE_NAME "VirtualFriend_OBD"
+```
+
+Los pines deben ser modificables fácilmente.
+
+---
+
+### VehicleData.h
+
+Debe definir una estructura simple:
+
+```cpp
+#pragma once
+
+struct VehicleData {
+    int rpm = -1;
+    int speed = -1;
+    int coolantTemp = -1;
+    float batteryVoltage = -1.0;
+    bool valid = false;
+};
+```
+
+---
+
+### CanManager
+
+Debe encargarse de:
+
+```txt
+Inicializar TWAI/CAN
+Enviar tramas CAN
+Recibir tramas CAN
+Filtrar respuestas
+```
+
+---
+
+### ObdReader
+
+Debe encargarse de:
+
+```txt
+Pedir RPM
+Pedir velocidad
+Pedir temperatura
+Convertir bytes en valores reales
+```
+
+---
+
+### BleServer
+
+Debe encargarse de:
+
+```txt
+Iniciar BLE
+Crear servicio
+Crear característica
+Notificar datos al M5Stack
+```
+
+---
+
+## 15. Casos de prueba
+
+### Caso 1: ESP32 arranca
+
+Condición:
+
+```txt
+ESP32-C3 conectado por USB
+```
+
+Resultado esperado:
+
+```txt
+Mensaje por Serial Monitor:
+"Dongle OBD2 iniciado"
+```
+
+---
+
+### Caso 2: BLE visible
+
+Condición:
+
+```txt
+ESP32-C3 encendido
+```
+
+Resultado esperado:
+
+```txt
+El móvil o el M5Stack detecta un dispositivo llamado:
+VirtualFriend_OBD
+```
+
+---
+
+### Caso 3: CAN inicializado
+
+Condición:
+
+```txt
+ESP32-C3 + SN65HVD230 conectados
+```
+
+Resultado esperado:
+
+```txt
+Serial Monitor:
+"CAN inicializado correctamente"
+```
+
+---
+
+### Caso 4: Lectura de RPM
+
+Condición:
+
+```txt
+Dongle conectado al OBD2
+Contacto del coche dado
+Motor encendido
+```
+
+Resultado esperado:
+
+```txt
+Serial Monitor muestra:
+RPM: valor mayor que 0
+```
+
+---
+
+### Caso 5: Lectura de velocidad
+
+Condición:
+
+```txt
+Coche en movimiento
+```
+
+Resultado esperado:
+
+```txt
+Serial Monitor muestra velocidad en km/h
+```
+
+---
+
+### Caso 6: Temperatura refrigerante
+
+Condición:
+
+```txt
+Coche encendido durante unos minutos
+```
+
+Resultado esperado:
+
+```txt
+Temperatura sube progresivamente desde valor bajo hasta temperatura normal
+```
+
+---
+
+### Caso 7: Envío BLE
+
+Condición:
+
+```txt
+Dongle lee datos válidos
+M5Stack conectado por BLE
+```
+
+Resultado esperado:
+
+```txt
+M5Stack recibe:
+rpm
+speed
+coolant_temp
+```
+
+---
+
+## 16. Errores comunes
+
+### No hay respuesta del coche
+
+Posibles causas:
+
+```txt
+Contacto del coche apagado
+CAN-H y CAN-L invertidos
+GND no común
+Velocidad CAN incorrecta
+Pines TX/RX mal configurados
+SN65HVD230 mal alimentado
+Cable OBD2 mal identificado
+```
+
+---
+
+### El ESP32 se reinicia
+
+Posibles causas:
+
+```txt
+Conversor 12V→5V inestable
+Salida del conversor mal ajustada
+Cables sueltos
+Corto parcial
+Alimentación insuficiente
+```
+
+---
+
+### El coche muestra errores
+
+Detener la prueba.
+
+Revisar:
+
+```txt
+Cableado
+Terminación CAN
+Cortos
+Tramas enviadas
+Frecuencia de consultas
+```
+
+El dongle no debe enviar comandos de escritura ni comandos propietarios.
+
+---
+
+### Se calienta algo
+
+Desconectar inmediatamente.
+
+Revisar:
+
+```txt
+Cortocircuito
+Polaridad invertida
+Conversor defectuoso
+Fusible demasiado grande
+Cable mal conectado
+```
+
+---
+
+## 17. Reglas de seguridad
+
+Durante el prototipo:
+
+```txt
+No escribir en centralitas
+No borrar códigos de error
+No controlar módulos
+No enviar comandos propietarios
+No programar ECU
+No manipular ABS, airbag, dirección, DSG ni inmovilizador
+Solo leer PIDs OBD2 estándar
+```
+
+No dejar placas sueltas debajo del volante.
+
+Usar siempre:
+
+```txt
+Fusible
+Caja
+Aislamiento
+Multímetro
+Conexiones firmes
+```
+
+---
+
+## 18. Resultado esperado del primer prototipo funcional
+
+El primer objetivo realista es:
+
+```txt
+ESP32-C3 conectado al OBD2
+SN65HVD230 comunicando por CAN
+Lectura de RPM por Serial Monitor
+Lectura de velocidad
+Lectura de temperatura
+Envío BLE al M5Stack CoreS3
+```
+
+No hace falta empezar con:
+
+```txt
+VIN
+DTCs complejos
+Datos Volkswagen propietarios
+DSG
+ABS
+Airbag
+Climatizador
+Control de módulos
+```
+
+Primero deben funcionar los datos OBD2 básicos.
+
+---
+
+## 19. Petición concreta para Claude
+
+Claude debe ayudar a convertir este manual en código y guía práctica.
+
+Necesito que Claude:
+
+```txt
+1. Genere la estructura del proyecto en C++.
+2. Cree código para ESP32-C3 usando Arduino Framework.
+3. Configure TWAI/CAN para leer OBD2 básico.
+4. Lea RPM, velocidad y temperatura del refrigerante.
+5. Envíe esos datos por BLE al M5Stack CoreS3.
+6. Añada logs por Serial Monitor.
+7. Explique cada archivo de forma didáctica.
+8. Mantenga el código modular y fácil de entender.
+9. Evite cualquier comando peligroso para el coche.
+10. Prepare pruebas ficticias antes de conectar al vehículo.
+```
+
+El objetivo no es crear un producto comercial todavía. El objetivo es conseguir un dongle OBD2 experimental, seguro y entendible.

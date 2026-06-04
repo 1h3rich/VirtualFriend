@@ -1,0 +1,177 @@
+EVOLUCIÓN DE LA PANTALLA DEL PROYECTO VIRTUALFRIEND
+
+Este documento explica la decisión de desarrollar el proyecto en dos fases: primero usando la pantalla original del M5Stack CoreS3 y, más adelante, evolucionando hacia una pantalla OLED integrada en una carcasa propia.
+
+1. IDEA GENERAL
+
+El proyecto VirtualFriend no empezará directamente con una pantalla OLED personalizada. La primera versión se desarrollará usando la pantalla que ya trae el M5Stack CoreS3. Esto permite avanzar más rápido, probar el código, validar las animaciones, comprobar las expresiones faciales y desarrollar las reacciones del dispositivo sin complicar todavía la parte física del diseño.
+
+Una vez que el sistema funcione correctamente, se podrá evolucionar hacia una versión más personalizada, sustituyendo el enfoque de prototipo por una carcasa propia con una pantalla OLED integrada.
+
+La evolución sería:
+
+FASE 1:
+M5Stack CoreS3 con su pantalla original.
+
+FASE 2:
+Pantalla OLED externa integrada en una carcasa diseñada y fabricada específicamente para el proyecto.
+
+2. FASE 1: USAR LA PANTALLA ORIGINAL DEL M5STACK CORES3
+
+En la primera fase se usará la pantalla integrada del CoreS3. Aunque no sea OLED, es suficiente para desarrollar el prototipo inicial.
+
+Esta fase permite centrarse en lo importante:
+
+- Encendido del dispositivo.
+- Mostrar una cara en pantalla.
+- Cambiar expresiones.
+- Crear animaciones básicas.
+- Mostrar frases o estados.
+- Probar sonidos simples.
+- Leer sensores internos.
+- Reaccionar al movimiento mediante acelerómetro/giroscopio.
+- Validar la lógica del compañero virtual.
+
+La ventaja principal es que no hay que modificar físicamente el dispositivo. Se programa directamente el CoreS3 y se usa su pantalla tal como viene de fábrica.
+
+Esto reduce problemas iniciales como:
+
+- Cableado incorrecto.
+- Incompatibilidad de pantalla.
+- Falta de espacio interno.
+- Problemas de alimentación.
+- Necesidad de diseñar una carcasa desde el principio.
+- Riesgo de dañar el dispositivo.
+
+Por tanto, la pantalla original se usará como herramienta de desarrollo, no necesariamente como pantalla definitiva.
+
+3. POR QUÉ NO CAMBIAR LA PANTALLA DESDE EL PRINCIPIO
+
+Cambiar la pantalla al inicio complicaría demasiado el proyecto. Antes de preocuparse por la estética final, hay que confirmar que el sistema funciona.
+
+Primero debe resolverse la parte lógica:
+
+- Que el M5Stack arranque correctamente.
+- Que la pantalla muestre expresiones.
+- Que las animaciones funcionen.
+- Que el dispositivo reaccione al movimiento.
+- Que el código esté bien estructurado.
+- Que el personaje tenga comportamiento propio.
+- Que el sistema pueda evolucionar sin rehacer todo desde cero.
+
+Si se empieza directamente con una pantalla OLED externa y una carcasa personalizada, se mezclan demasiados problemas a la vez: programación, electrónica, diseño físico, cableado, alimentación y montaje.
+
+Por eso la estrategia correcta es validar primero el comportamiento del prototipo y después mejorar la parte estética.
+
+4. FASE 2: EVOLUCIÓN A PANTALLA OLED
+
+Cuando el prototipo básico ya funcione, se podrá pasar a una pantalla OLED. Esta fase busca que el dispositivo tenga una apariencia más personalizada, más limpia y más cercana a un producto final.
+
+La pantalla OLED puede aportar:
+
+- Mejor contraste.
+- Negros reales.
+- Estética más robótica o minimalista.
+- Menor consumo en interfaces simples.
+- Mejor integración visual para ojos, boca y expresiones sencillas.
+- Posibilidad de diseñar una cara más compacta y expresiva.
+
+En esta fase, la pantalla OLED no se usaría como una simple pieza externa colgando del M5Stack, sino como parte de una carcasa nueva diseñada para el proyecto.
+
+5. CARCASA PROPIA
+
+La evolución lógica no es meter una pantalla OLED en la carcasa original del CoreS3, sino fabricar una carcasa propia.
+
+La carcasa propia permitiría:
+
+- Elegir la posición exacta de la pantalla.
+- Diseñar una forma más atractiva para el compañero virtual.
+- Integrar el altavoz de forma más natural.
+- Colocar los sensores donde convenga.
+- Ocultar cables.
+- Hacer el diseño más compacto.
+- Adaptarlo mejor al interior del coche.
+- Crear una identidad visual propia para el dispositivo.
+
+La carcasa podría hacerse mediante impresión 3D o mediante otro método de fabricación casera. Lo importante es que la pantalla, la placa y el resto de componentes queden sujetos de forma segura y ordenada.
+
+6. SIN BANDEJA DE EXPANSIÓN
+
+La versión evolucionada no dependerá de una bandeja de expansión externa ni de módulos voluminosos añadidos por debajo del M5Stack.
+
+La idea es evitar que el prototipo final parezca una acumulación de piezas encajadas sin diseño. En lugar de eso, se buscará una construcción más limpia:
+
+- Placa principal.
+- Pantalla OLED.
+- Cableado interno.
+- Altavoz o sistema de sonido.
+- Alimentación controlada.
+- Sensores necesarios.
+- Carcasa personalizada.
+
+Esto significa que el proyecto evolucionará desde un M5Stack usado como plataforma de pruebas hacia un dispositivo más propio, aunque internamente pueda seguir usando un ESP32-S3 o una placa similar.
+
+7. POSIBLE ENFOQUE TÉCNICO DE LA VERSIÓN OLED
+
+La pantalla OLED se conectaría normalmente mediante I2C o SPI, dependiendo del modelo elegido.
+
+Para una primera OLED externa, lo más sencillo sería usar una pantalla I2C, porque requiere pocos cables:
+
+- VCC: alimentación.
+- GND: tierra.
+- SDA: datos.
+- SCL: reloj.
+
+Este tipo de conexión permite probar la pantalla sin una instalación compleja. Más adelante, cuando se diseñe la carcasa, esos cables quedarían ocultos dentro del dispositivo.
+
+Si se busca una pantalla más rápida o con más resolución, se podría valorar una OLED o TFT por SPI, aunque el cableado sería más complejo.
+
+8. RELACIÓN ENTRE SOFTWARE Y HARDWARE
+
+El código debe prepararse desde el principio para que cambiar de pantalla no obligue a rehacer todo el proyecto.
+
+Lo ideal es separar la lógica del personaje de la pantalla usada.
+
+Por ejemplo:
+
+- La lógica decide la emoción: feliz, enfadado, dormido, sorprendido, sarcástico, alerta.
+- El sistema de pantalla solo se encarga de dibujar esa emoción.
+
+Así, en la fase 1 se dibujan las expresiones en la pantalla original del CoreS3.
+
+En la fase 2 se adapta la parte de dibujo para que esas mismas expresiones aparezcan en la pantalla OLED.
+
+La estructura sería:
+
+Lógica del personaje -> Estado emocional -> Sistema de dibujo -> Pantalla actual
+
+De esta forma, la pantalla puede cambiar sin romper todo el programa.
+
+9. DECISIÓN FINAL
+
+La decisión correcta para el proyecto es avanzar por fases.
+
+Primero se usará la pantalla original del M5Stack CoreS3 para crear el prototipo funcional. Esta fase servirá para aprender, probar código y validar que el compañero virtual puede mostrar expresiones y reaccionar al entorno.
+
+Después, cuando el prototipo esté controlado, se evolucionará hacia una pantalla OLED integrada en una carcasa propia. Esta segunda fase permitirá mejorar la estética, reducir la dependencia del formato original del M5Stack y acercar el proyecto a una versión más personal y definitiva.
+
+No se usará una bandeja de expansión como base del diseño final. La intención es construir una carcasa propia, más limpia y adaptada al concepto del compañero virtual.
+
+10. RESUMEN
+
+FASE 1:
+Usar el M5Stack CoreS3 tal como viene.
+Programar la cara, expresiones, frases, sonidos y reacciones.
+No modificar físicamente la pantalla.
+Centrarse en que el prototipo funcione.
+
+FASE 2:
+Elegir una pantalla OLED.
+Diseñar una carcasa propia.
+Integrar la pantalla dentro del diseño.
+Ocultar el cableado.
+Evitar bandejas de expansión.
+Convertir el prototipo en un dispositivo más personalizado.
+
+Conclusión:
+Primero se valida el cerebro del proyecto. Después se mejora el cuerpo.

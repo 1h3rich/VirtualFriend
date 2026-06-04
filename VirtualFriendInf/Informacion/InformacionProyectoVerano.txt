@@ -1,0 +1,895 @@
+# Resumen del prototipo: Copiloto Virtual para coche
+
+## 1. Descripción general del proyecto
+
+El proyecto consiste en crear un **copiloto virtual físico para coche**, con aspecto de pequeño compañero digital. La idea es que acompañe al conductor durante los viajes, muestre una cara animada en pantalla, tenga personalidad humorística y sarcástica, pueda reaccionar al movimiento del vehículo y, en fases posteriores, leer datos reales del coche mediante OBD2/CAN.
+
+El proyecto está pensado para desarrollarse en la carpeta:
+
+```txt
+virtualfriend
+```
+
+El lenguaje principal será:
+
+```txt
+C++ / Arduino Framework
+```
+
+El objetivo inicial no es crear un producto comercial perfecto, sino un **prototipo funcional y ampliable**.
+
+---
+
+## 2. Personalidad del copiloto virtual
+
+El copiloto debe tener un tono:
+
+```txt
+Humorístico
+Sarcástico
+Carismático
+Útil cuando haga falta
+Capaz de ponerse serio ante avisos importantes
+```
+
+Ejemplo de comportamiento:
+
+* Si el conductor acelera mucho:
+  “Tranquilo, Fernando Alonso, que esto no es Nürburgring.”
+
+* Si detecta temperatura alta del motor:
+  “Ojo. El motor se está calentando más de la cuenta.”
+
+* Si detecta un bache o frenazo:
+  “Ese bache no era parte del trayecto, era contenido descargable.”
+
+La personalidad no debe impedir que dé avisos importantes de forma clara.
+
+---
+
+## 3. Hardware principal del copiloto
+
+El dispositivo principal elegido es:
+
+```txt
+M5Stack CoreS3 K128
+```
+
+Se eligió esta placa porque incluye muchos elementos ya integrados:
+
+```txt
+Pantalla táctil
+ESP32-S3
+Wi-Fi
+BLE
+Altavoz
+Doble micrófono
+Cámara
+Sensor de proximidad/luz
+IMU / acelerómetro / giroscopio
+Magnetómetro
+RTC
+microSD
+Batería/base
+```
+
+Este dispositivo será la parte visible del copiloto:
+
+```txt
+M5Stack CoreS3 = cara, voz, pantalla, IA, personalidad y reacciones
+```
+
+---
+
+## 4. Prototipo Nivel 1
+
+El primer prototipo debe ser simple. No debe depender todavía del OBD2 ni de datos reales del coche.
+
+El Prototipo 1 consta de:
+
+```txt
+Encendido
+Pantalla con cara
+Cambio de expresiones
+Frases predefinidas
+Sonidos simples
+Reacción a movimiento
+```
+
+### Objetivo del Prototipo 1
+
+Crear un dispositivo que:
+
+```txt
+Se encienda correctamente
+Muestre una cara animada
+Cambie de expresión
+Reproduzca frases o sonidos simples
+Reaccione al movimiento usando sensores internos
+```
+
+### Componentes necesarios para Prototipo 1
+
+```txt
+M5Stack CoreS3 K128
+Animaciones de cara
+Frases predefinidas
+Sistema básico de sonido
+Lectura de sensores internos
+Código en C++
+```
+
+### Cómo se abordará cada parte
+
+#### Encendido
+
+El M5Stack debe iniciar correctamente y mostrar una pantalla de bienvenida.
+
+Ejemplo:
+
+```txt
+"Copiloto iniciado"
+"Cargando personalidad..."
+```
+
+#### Pantalla con cara
+
+La pantalla mostrará una cara simple. Puede empezar siendo muy básica:
+
+```txt
+Ojos normales
+Ojos enfadados
+Ojos sorprendidos
+Ojos dormidos
+Boca simple
+```
+
+No hace falta empezar con animaciones complejas. Primero importa que se pueda cambiar de estado visual.
+
+#### Cambio de expresiones
+
+El dispositivo tendrá distintos estados:
+
+```txt
+Normal
+Feliz
+Sarcástico
+Alerta
+Dormido
+Asustado
+Pensando
+```
+
+Cada estado cambiará la cara mostrada en pantalla.
+
+#### Frases predefinidas
+
+Al principio no se usará IA generativa. Se programará una lista de frases predefinidas.
+
+Ejemplo:
+
+```cpp
+"Vaya conducción. No sé si aplaudir o rezar."
+"Todo bajo control. Supuestamente."
+"Estoy despierto. Más que algunos copilotos humanos."
+```
+
+#### Sonidos simples
+
+El CoreS3 podrá reproducir sonidos breves:
+
+```txt
+Beep
+Sonido de alerta
+Sonido de confirmación
+Sonido de arranque
+Sonido de reacción
+```
+
+#### Reacción a movimiento
+
+El M5Stack CoreS3 usará sus sensores internos para detectar:
+
+```txt
+Baches
+Frenazos
+Curvas bruscas
+Golpes
+Movimiento repentino
+```
+
+Esto no necesita OBD2. Se hace con acelerómetro/giroscopio.
+
+Ejemplo:
+
+```txt
+Si detecta aceleración fuerte → cambia a cara sorprendida
+Si detecta golpe/bache → reproduce frase sarcástica
+Si no hay movimiento durante un rato → modo dormido
+```
+
+---
+
+## 5. Prototipo Nivel 2: conexión con datos del coche
+
+La siguiente fase consiste en leer datos reales del vehículo.
+
+Hay dos opciones:
+
+```txt
+1. Adaptador OBD2 BLE comercial
+2. Dongle OBD2 propio
+```
+
+Se ha decidido explorar la opción de **crear un dongle propio**, para no depender de un adaptador comercial y para aprender cómo funcionaría una versión de producción.
+
+---
+
+## 6. Arquitectura general con OBD2
+
+La arquitectura sería:
+
+```txt
+Coche
+↓
+Puerto OBD2 debajo del volante
+↓
+Dongle OBD2 propio
+↓ BLE
+M5Stack CoreS3
+↓
+Cara, voz, frases, IA y reacciones
+```
+
+El puerto OBD2 permite acceder a datos básicos del coche mediante CAN/OBD2.
+
+Datos útiles:
+
+```txt
+RPM
+Velocidad
+Temperatura del refrigerante
+Voltaje
+Carga del motor
+Códigos de error
+```
+
+No se pretende leer “todo el coche”. El objetivo inicial es leer datos OBD2 estándar.
+
+---
+
+## 7. Dongle OBD2 propio
+
+El dongle propio sería un pequeño dispositivo conectado al puerto OBD2 del coche. Su función será leer datos básicos del vehículo y enviarlos por BLE al M5Stack CoreS3.
+
+La idea es:
+
+```txt
+Dongle OBD2 = lector técnico del coche
+M5Stack CoreS3 = interfaz, personalidad y comportamiento
+```
+
+### Componentes del dongle propio
+
+```txt
+ESP32-C3
+Módulo CAN SN65HVD230
+Cable OBD2 macho a cables abiertos
+Conversor 12V a 5V
+Fusible / portafusible
+Cables Dupont
+Caja pequeña
+Soldador / estaño / termorretráctil
+Multímetro
+```
+
+---
+
+## 8. Para qué sirve cada componente
+
+### M5Stack CoreS3 K128
+
+Es el cuerpo principal del copiloto.
+
+Sirve para:
+
+```txt
+Mostrar la cara animada
+Reproducir voz o sonidos
+Escuchar mediante micrófono
+Usar Wi-Fi para futuras APIs
+Conectarse por BLE al dongle
+Detectar movimiento con sus sensores internos
+Ejecutar la lógica principal del personaje
+```
+
+---
+
+### ESP32-C3
+
+Es el cerebro del dongle OBD2.
+
+Sirve para:
+
+```txt
+Leer datos del coche
+Procesar respuestas OBD2/CAN
+Enviar datos limpios por BLE al M5Stack
+```
+
+El ESP32-C3 no será visible para el usuario. Irá dentro de una pequeña caja conectada al OBD2.
+
+---
+
+### SN65HVD230 CAN Module
+
+Es el transceptor CAN.
+
+Sirve para que el ESP32-C3 pueda comunicarse físicamente con el bus CAN del coche.
+
+El ESP32-C3 puede gestionar CAN/TWAI a nivel lógico, pero necesita un transceptor para conectarse a los cables reales del coche:
+
+```txt
+CAN-H
+CAN-L
+```
+
+Sin este módulo, el ESP32-C3 no puede hablar correctamente con la red CAN del vehículo.
+
+---
+
+### Cable OBD2 macho a cables abiertos
+
+Es el enchufe físico al coche.
+
+Sirve para conectar el dongle al puerto OBD2 sin desmontar nada.
+
+Pines importantes:
+
+```txt
+Pin 6  → CAN-H
+Pin 14 → CAN-L
+Pin 16 → +12V
+Pin 4/5 → GND / masa
+```
+
+Este cable permite construir el dongle sin tener que desmontar salpicadero ni buscar cables CAN internos.
+
+---
+
+### Conversor 12V a 5V
+
+El coche entrega 12V por el puerto OBD2, pero el ESP32-C3 no puede recibir 12V directamente.
+
+Este módulo sirve para:
+
+```txt
+Bajar de 12V del coche a 5V seguros
+Alimentar el ESP32-C3
+Evitar quemar la placa
+```
+
+Conexión:
+
+```txt
+OBD2 pin 16 +12V
+↓
+Fusible
+↓
+Conversor 12V a 5V
+↓
+ESP32-C3
+```
+
+---
+
+### Fusible / portafusible
+
+Sirve para proteger el prototipo y el coche en caso de cortocircuito.
+
+Debe ir entre el positivo del OBD2 y el conversor:
+
+```txt
+OBD2 pin 16 +12V
+↓
+Fusible 1A
+↓
+Conversor 12V a 5V
+```
+
+Fusible recomendado:
+
+```txt
+1A
+```
+
+También puede servir:
+
+```txt
+500mA
+2A
+```
+
+No usar fusibles grandes tipo 20A o 30A para este circuito.
+
+---
+
+### Cables Dupont
+
+Sirven para conectar módulos durante las pruebas.
+
+Conectan:
+
+```txt
+ESP32-C3 ↔ SN65HVD230
+SN65HVD230 ↔ cable OBD2
+Conversor 5V ↔ ESP32-C3
+```
+
+Para pruebas están bien. Para un montaje más estable en coche, mejor soldar y aislar.
+
+---
+
+### Caja pequeña
+
+Sirve para meter dentro el dongle y evitar que las placas y cables queden sueltos debajo del volante.
+
+Tamaño recomendado:
+
+```txt
+100 x 60 x 25 mm
+100 x 60 x 30 mm
+```
+
+Debe ser:
+
+```txt
+Plástica
+No metálica
+Fácil de taladrar
+Con tapa
+Suficientemente amplia para prototipo
+```
+
+---
+
+### Soldador, estaño y termorretráctil
+
+Sirven para dejar conexiones firmes y seguras.
+
+Los cables Dupont son útiles para pruebas, pero no deberían quedar como montaje final dentro del coche.
+
+---
+
+### Multímetro
+
+Es importante para comprobar:
+
+```txt
+Que el conversor entrega 5V y no 12V
+Que no hay cortocircuitos
+Qué cable corresponde a cada pin del OBD2
+Que GND está bien conectado
+```
+
+Antes de conectar el ESP32-C3 al conversor, hay que medir la salida.
+
+---
+
+## 9. Conexión eléctrica del dongle
+
+Esquema básico:
+
+```txt
+OBD2 pin 6  CAN-H  → CAN-H del SN65HVD230
+OBD2 pin 14 CAN-L  → CAN-L del SN65HVD230
+
+OBD2 pin 16 +12V
+↓
+Fusible 1A
+↓
+Conversor 12V a 5V
+↓
+5V del ESP32-C3
+
+OBD2 pin 4/5 GND
+↓
+GND común del conversor, ESP32-C3 y SN65HVD230
+
+ESP32-C3 GPIO TX CAN → TXD del SN65HVD230
+ESP32-C3 GPIO RX CAN → RXD del SN65HVD230
+```
+
+---
+
+## 10. Comunicación OBD2/CAN
+
+Para leer datos básicos no hace falta interpretar todo el CAN del coche.
+
+Se pueden hacer consultas OBD2 estándar.
+
+Ejemplo: pedir RPM.
+
+Petición CAN:
+
+```txt
+ID: 0x7DF
+Datos: 02 01 0C 00 00 00 00 00
+```
+
+Significado:
+
+```txt
+02 = longitud de datos útiles
+01 = modo OBD2 para datos actuales
+0C = PID de RPM
+```
+
+Respuesta esperada:
+
+```txt
+ID: 0x7E8
+Datos: 04 41 0C A B 00 00 00
+```
+
+Cálculo:
+
+```txt
+RPM = ((A * 256) + B) / 4
+```
+
+Otros PIDs útiles:
+
+```txt
+010C → RPM
+010D → velocidad
+0105 → temperatura refrigerante
+010F → temperatura de admisión
+0111 → posición del acelerador
+03   → códigos de error
+```
+
+---
+
+## 11. Software recomendado
+
+Para el ESP32-C3:
+
+```txt
+Arduino Framework o ESP-IDF
+TWAI/CAN
+BLE
+```
+
+Librería/referencia útil:
+
+```txt
+TWAI_ISO-TP
+```
+
+Uso previsto:
+
+```txt
+TWAI directo → datos simples como RPM, velocidad y temperatura
+TWAI_ISO-TP → mensajes más complejos como VIN o DTCs largos
+```
+
+Para el M5Stack CoreS3:
+
+```txt
+M5Unified / librerías de M5Stack
+BLE client
+Pantalla
+Sonido
+Sensores internos
+Wi-Fi para futuras APIs
+```
+
+---
+
+## 12. Comunicación entre dongle y M5Stack
+
+El dongle ESP32-C3 enviará datos por BLE al M5Stack.
+
+La idea es que el dongle no mande tramas crudas, sino datos limpios.
+
+Ejemplo:
+
+```json
+{
+  "rpm": 1850,
+  "speed": 72,
+  "coolant_temp": 91,
+  "battery": 13.8,
+  "errors": []
+}
+```
+
+El M5Stack recibe esos datos y decide cómo reaccionar.
+
+Ejemplo:
+
+```txt
+RPM > 3500 → cara sorprendida + frase sarcástica
+Temperatura > 105 ºC → alerta seria
+Velocidad alta → comentario
+Error motor detectado → aviso
+```
+
+---
+
+## 13. Fases de desarrollo recomendadas
+
+### Fase 1: Prototipo visual básico
+
+Objetivo:
+
+```txt
+Encender M5Stack
+Mostrar cara
+Cambiar expresiones
+Reproducir frases
+Detectar movimiento
+```
+
+Sin OBD2 todavía.
+
+---
+
+### Fase 2: Dongle OBD2 básico por Serial Monitor
+
+Objetivo:
+
+```txt
+ESP32-C3 + SN65HVD230 + OBD2
+Leer RPM
+Mostrar RPM por Serial Monitor
+```
+
+Sin BLE todavía.
+
+---
+
+### Fase 3: Lectura de varios datos
+
+Objetivo:
+
+```txt
+Leer RPM
+Leer velocidad
+Leer temperatura refrigerante
+Leer voltaje si es posible
+```
+
+---
+
+### Fase 4: Comunicación BLE
+
+Objetivo:
+
+```txt
+ESP32-C3 envía datos por BLE
+M5Stack CoreS3 recibe datos por BLE
+```
+
+---
+
+### Fase 5: Integración con comportamiento del copiloto
+
+Objetivo:
+
+```txt
+Los datos del coche cambian expresiones
+Los datos del coche activan frases
+Los sensores internos detectan baches/frenazos
+```
+
+---
+
+### Fase 6: Caja y montaje físico
+
+Objetivo:
+
+```txt
+Meter el dongle en caja
+Aislar conexiones
+Evitar cables sueltos
+Hacer pruebas reales en coche
+```
+
+---
+
+## 14. Casos de prueba ficticios
+
+### Caso 1: Arranque correcto
+
+Condición:
+
+```txt
+El M5Stack se enciende
+```
+
+Resultado esperado:
+
+```txt
+Muestra cara normal
+Reproduce sonido de inicio
+Muestra mensaje de sistema listo
+```
+
+---
+
+### Caso 2: Cambio de expresión manual
+
+Condición:
+
+```txt
+Se pulsa un botón o se activa un estado de prueba
+```
+
+Resultado esperado:
+
+```txt
+La cara cambia de normal a sarcástica
+```
+
+---
+
+### Caso 3: Detección de bache
+
+Condición:
+
+```txt
+El acelerómetro detecta movimiento brusco
+```
+
+Resultado esperado:
+
+```txt
+Cara sorprendida
+Sonido breve
+Frase sarcástica
+```
+
+---
+
+### Caso 4: Lectura de RPM
+
+Condición:
+
+```txt
+El dongle envía rpm = 3200
+```
+
+Resultado esperado:
+
+```txt
+El M5Stack muestra expresión alerta/sarcástica
+Puede lanzar frase relacionada con revoluciones
+```
+
+---
+
+### Caso 5: Temperatura alta
+
+Condición:
+
+```txt
+coolant_temp > 105
+```
+
+Resultado esperado:
+
+```txt
+El copiloto cambia a modo alerta
+Da un aviso claro y serio
+```
+
+---
+
+### Caso 6: Sin conexión BLE
+
+Condición:
+
+```txt
+El M5Stack no encuentra el dongle
+```
+
+Resultado esperado:
+
+```txt
+El copiloto sigue funcionando en modo básico
+Muestra aviso: "Sin datos del coche"
+No bloquea el sistema
+```
+
+---
+
+### Caso 7: Datos inválidos
+
+Condición:
+
+```txt
+El dongle envía valores nulos o erróneos
+```
+
+Resultado esperado:
+
+```txt
+El M5Stack ignora esos datos
+Mantiene el último estado válido o vuelve a modo normal
+```
+
+---
+
+## 15. Principios de seguridad
+
+Durante el prototipo:
+
+```txt
+No escribir comandos peligrosos al coche
+No intentar controlar módulos del vehículo
+No modificar centralitas
+No mandar comandos de programación
+Solo lectura / consultas OBD2 estándar
+Usar fusible
+Medir voltajes antes de conectar
+Aislar cables
+No dejar placas sueltas bajo el volante
+```
+
+El objetivo es leer datos, no controlar el coche.
+
+---
+
+## 16. Objetivo final del prototipo
+
+El objetivo final de esta fase es conseguir:
+
+```txt
+Un M5Stack CoreS3 funcionando como copiloto virtual
+Un dongle OBD2 propio basado en ESP32-C3
+Comunicación BLE entre dongle y M5Stack
+Lectura básica de datos reales del coche
+Reacciones visuales y sonoras según esos datos
+Código organizado en C++ dentro de la carpeta virtualfriend
+```
+
+El prototipo debe priorizar:
+
+```txt
+Funcionamiento básico
+Seguridad
+Código entendible
+Modularidad
+Facilidad para ampliar
+```
+
+No debe priorizar todavía:
+
+```txt
+Carcasa comercial perfecta
+IA avanzada
+Compatibilidad con todos los coches
+Certificación
+Producción industrial
+```
+
+---
+
+## 17. Lo que se necesita de Claude
+
+Claude debe ayudar a:
+
+```txt
+Organizar el proyecto virtualfriend
+Diseñar la estructura de carpetas
+Crear código C++ entendible
+Separar lógica de pantalla, sensores, frases, BLE y OBD2
+Explicar cada archivo para que un principiante lo entienda
+Crear pruebas ficticias sustituibles por datos reales
+Preparar el código para M5Stack CoreS3
+Preparar después el código para ESP32-C3 como dongle OBD2 BLE
+```
+
+El código debe estar comentado y explicado de forma didáctica.
