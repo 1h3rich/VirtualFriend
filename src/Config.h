@@ -26,6 +26,14 @@
 #define COLOR_TEXT          0xFFFFFF
 #define COLOR_TEXT_ALERT    0xFF4444
 
+// --- OBD / CAN ---
+// 1 = valores simulados (mientras no llegue el comunicador CAN)
+// 0 = lectura real (activar cuando esté disponible el hardware)
+#define OBD_SIMULATION_MODE 1
+
+// Tiempo mínimo entre reacciones a datos OBD (ms)
+#define OBD_REACTION_COOLDOWN_MS 8000
+
 // --- WiFi ---
 #define WIFI_SSID    "REDACTADO"
 #define WIFI_PASS    "REDACTADO"

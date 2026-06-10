@@ -1,0 +1,303 @@
+DOCUMENTO PARA CLAUDE
+Proyecto: VirtualFriend / Compañero virtual para coche
+Carpeta del proyecto: virtualfriend
+Placa principal: M5Stack CoreS3 K128
+Lenguaje: C++ / entorno ESP32
+
+ESTADO ACTUAL DEL PROTOTIPO 1
+
+El prototipo 1 ya está prácticamente acabado.
+
+Ya funciona la base principal del compañero virtual:
+
+1. Encendido del sistema.
+2. Pantalla con cara del personaje.
+3. Cambio de expresiones.
+4. Frases predefinidas.
+5. Sonidos simples.
+6. Reacción mediante movimiento.
+7. Lectura de movimiento usando los sensores internos del M5Stack CoreS3.
+8. Reacciones simples ante movimiento, inclinación, golpes suaves o cambios bruscos.
+
+El prototipo ya no está en fase de idea. La parte visual, expresiva y reactiva básica ya está implementada. El dispositivo ya puede comportarse como un pequeño compañero virtual autónomo, sin depender todavía del coche.
+
+LO QUE FALTA
+
+La parte que falta por implementar es la lectura de datos reales del coche mediante CAN/OBD.
+
+Actualmente el sistema puede reaccionar al movimiento, pero todavía no puede leer datos como:
+
+- RPM del motor.
+- Velocidad del vehículo.
+- Temperatura del motor.
+- Errores del motor.
+- Estado del coche.
+- Posibles códigos DTC.
+- Eventos detectados desde la centralita.
+- Datos OBD-II básicos.
+
+El comunicador CAN todavía no ha llegado, así que esta parte debe dejarse preparada pero no puede probarse todavía con datos reales.
+
+OBJETIVO DE LA SIGUIENTE FASE
+
+La siguiente fase consiste en integrar las lecturas CAN/OBD sin romper el prototipo 1.
+
+No se debe rehacer el sistema desde cero.
+
+La idea correcta es mantener el prototipo actual y añadir una capa nueva encargada de leer datos del coche.
+
+Estructura ideal:
+
+virtualfriend/
+├── src/
+│   ├── main.cpp
+│   ├── face.cpp
+│   ├── face.h
+│   ├── phrases.cpp
+│   ├── phrases.h
+│   ├── motion.cpp
+│   ├── motion.h
+│   ├── audio.cpp
+│   ├── audio.h
+│   ├── obd.cpp
+│   └── obd.h
+
+La parte nueva sería principalmente:
+
+- obd.h
+- obd.cpp
+
+Estos archivos deben encargarse de todo lo relacionado con el coche, dejando main.cpp lo más limpio posible.
+
+FUNCIONAMIENTO PROPUESTO
+
+Mientras no esté conectado el comunicador CAN, el sistema debe poder seguir funcionando igual que ahora.
+
+Por eso se recomienda crear un modo de simulación.
+
+Ejemplo de variables de estado:
+
+bool obdConnected = false;
+int carRPM = 0;
+int carSpeed = 0;
+int engineTemp = 0;
+bool engineError = false;
+
+Y funciones como:
+
+void initOBD();
+void updateOBD();
+bool isOBDConnected();
+int getRPM();
+int getSpeed();
+int getEngineTemp();
+bool hasEngineError();
+
+Mientras no haya CAN real, estas funciones pueden devolver valores falsos o valores neutros.
+
+Ejemplo:
+
+int getRPM() {
+    if (!obdConnected) {
+        return 0;
+    }
+
+    return carRPM;
+}
+
+Más adelante, cuando llegue el comunicador CAN, solo habrá que sustituir la parte interna de updateOBD() para obtener datos reales.
+
+NO MEZCLAR LA LÓGICA DEL PERSONAJE CON LA LÓGICA CAN
+
+Es importante que Claude no mezcle directamente las lecturas CAN con la cara, las frases o las animaciones.
+
+Lo correcto es hacer una separación clara:
+
+1. obd.cpp lee datos del coche.
+2. main.cpp consulta esos datos.
+3. El sistema de expresiones decide cómo reacciona el personaje.
+
+Ejemplo:
+
+updateOBD();
+
+if (hasEngineError()) {
+    setExpression(EXPRESSION_WORRIED);
+    sayPhrase("He detectado un fallo. No quiero alarmarte, pero tu coche acaba de hablarme en código de error.");
+}
+
+if (getRPM() > 4000) {
+    setExpression(EXPRESSION_SURPRISED);
+    sayPhrase("Vas un poco revolucionado. El motor está empezando a preguntarse por sus derechos laborales.");
+}
+
+if (getSpeed() > 120) {
+    setExpression(EXPRESSION_SERIOUS);
+    sayPhrase("No soy la Guardia Civil, pero quizá deberías levantar un poco el pie.");
+}
+
+De esta forma, las lecturas CAN solo aportan información. La personalidad del compañero virtual se mantiene en otra parte del código.
+
+DATOS CAN/OBD PRIORITARIOS PARA IMPLEMENTAR
+
+Para la primera integración no hace falta leer todo el coche.
+
+Prioridad recomendada:
+
+1. Velocidad del vehículo.
+2. RPM del motor.
+3. Temperatura del refrigerante.
+4. Códigos de error básicos.
+5. Estado de conexión con el coche.
+
+Después, en fases posteriores, se puede ampliar con:
+
+- Carga del motor.
+- Posición del acelerador.
+- Voltaje de batería.
+- Consumo estimado.
+- Distancia recorrida.
+- Datos más específicos según el coche.
+
+COMPORTAMIENTOS QUE SE PUEDEN AÑADIR CUANDO FUNCIONE CAN
+
+Cuando las lecturas CAN funcionen, el compañero virtual podrá reaccionar a situaciones reales del coche.
+
+Ejemplos:
+
+1. RPM altas:
+   - Cara sorprendida.
+   - Frase sarcástica.
+   - Aviso suave para cambiar de marcha o reducir exigencia al motor.
+
+2. Temperatura alta:
+   - Cara preocupada.
+   - Aviso serio.
+   - Mensaje recomendando parar o revisar el motor.
+
+3. Error motor:
+   - Cara seria.
+   - Lectura del código si es posible.
+   - Explicación simple del problema.
+
+4. Velocidad alta:
+   - Cara seria o tensa.
+   - Comentario preventivo.
+   - Sin exagerar ni distraer al conductor.
+
+5. Coche parado durante mucho tiempo:
+   - Frase humorística.
+   - Animación de aburrimiento o sueño.
+
+6. Conducción suave:
+   - Cara tranquila.
+   - Comentarios positivos ocasionales.
+
+IMPORTANTE SOBRE SEGURIDAD
+
+El compañero virtual no debe distraer al conductor.
+
+Las reacciones deben ser breves.
+
+Los avisos importantes deben diferenciarse de las bromas.
+
+Regla recomendada:
+
+- Problema leve: tono humorístico.
+- Problema mecánico o peligro real: tono serio.
+- Situación de conducción delicada: pocas palabras y mensaje claro.
+
+Ejemplo de aviso serio:
+
+"Temperatura del motor alta. Sería recomendable detener el coche en un lugar seguro."
+
+Ejemplo de aviso humorístico:
+
+"El motor está bien, tú no tanto, pero eso ya lo sabíamos."
+
+CÓMO DEBE IMPLEMENTARSE LA INTEGRACIÓN
+
+Claude debe trabajar de forma incremental.
+
+Paso 1:
+Crear obd.h y obd.cpp con funciones falsas o modo simulación.
+
+Paso 2:
+Conectar esas funciones con main.cpp sin alterar el comportamiento actual.
+
+Paso 3:
+Añadir algunas reacciones simples usando datos simulados.
+
+Paso 4:
+Cuando llegue el comunicador CAN, sustituir la simulación por lectura real.
+
+Paso 5:
+Probar primero con el coche apagado/contacto dado si procede, y después con el motor encendido, siempre con cuidado.
+
+Paso 6:
+Validar que, si falla la conexión CAN, el prototipo sigue funcionando en modo normal.
+
+MODO SIMULACIÓN RECOMENDADO
+
+Mientras no haya comunicador CAN, se puede hacer algo así:
+
+void updateOBD() {
+    if (!obdConnected) {
+        carRPM = 0;
+        carSpeed = 0;
+        engineTemp = 0;
+        engineError = false;
+        return;
+    }
+
+    // Aquí irá la lectura real cuando llegue el comunicador CAN.
+}
+
+También se puede activar un modo debug:
+
+#define OBD_SIMULATION_MODE true
+
+Si está activo, se pueden generar valores falsos:
+
+carRPM = random(800, 4500);
+carSpeed = random(0, 130);
+engineTemp = random(70, 105);
+engineError = random(0, 100) > 95;
+
+Esto permite probar las expresiones y frases antes de tener el hardware CAN.
+
+OBJETIVO FINAL DE ESTA FASE
+
+El objetivo no es crear todavía el producto final.
+
+El objetivo de esta fase es que el compañero virtual pase de reaccionar solo al movimiento a reaccionar también al estado real del coche.
+
+Estado actual:
+- Reacciona como personaje autónomo.
+- Usa pantalla, sonidos, frases y sensores internos.
+- Detecta movimiento.
+
+Siguiente estado:
+- Reacciona también a datos reales del vehículo.
+- Lee datos básicos por CAN/OBD.
+- Mantiene su personalidad.
+- No se bloquea si no hay conexión con el coche.
+- Sigue funcionando aunque el módulo CAN falle o no esté conectado.
+
+RESUMEN PARA CLAUDE
+
+El prototipo 1 ya está terminado en su parte básica. No hay que rehacerlo. Ya existen pantalla, expresiones, frases, sonidos y reacción por movimiento.
+
+La tarea pendiente es añadir una capa CAN/OBD.
+
+Esa capa debe estar separada del resto del sistema, preferiblemente en obd.h y obd.cpp.
+
+Mientras no llegue el comunicador CAN, debe funcionar en modo simulación o devolver valores neutros.
+
+Cuando llegue el comunicador, se sustituirá la simulación por lecturas reales del coche.
+
+La prioridad es leer velocidad, RPM, temperatura y errores básicos.
+
+El sistema debe usar esos datos para disparar expresiones, frases y avisos, pero sin mezclar la lógica de lectura CAN con la lógica de personalidad del personaje.
+
+La clave es avanzar de forma modular, segura y sin romper lo que ya funciona.

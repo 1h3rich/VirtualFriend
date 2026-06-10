@@ -7,6 +7,7 @@
 #include "AnimationPlayer.h"
 #include "AiManager.h"
 #include "MicManager.h"
+#include "obd.h"
 
 FaceRenderer      face;
 ExpressionManager expr;
@@ -17,6 +18,7 @@ volatile bool     g_aiThinking = false;
 
 SoundManager           sound;  // global: AiManager también lo usa para alertas
 static SensorMonitor   imu;
+static OBDManager      obd;
 AnimationPlayer        anim;   // global: AiManager le encola expresiones IA
 static AiManager       ai;
 static MicManager      mic;
@@ -24,8 +26,9 @@ static MicManager      mic;
 // ── Tarea de control (Core 1) ─────────────────────────────────────────────────
 
 void controlTask(void* pvParams) {
-    uint32_t lastImuMs   = 0;
-    uint32_t lastStackMs = 0;
+    uint32_t lastImuMs      = 0;
+    uint32_t lastStackMs    = 0;
+    uint32_t lastObdMs      = 0;
 
     while (true) {
         uint32_t now = millis();
@@ -84,6 +87,25 @@ void controlTask(void* pvParams) {
                 default: break;
             }
         }
+
+        // ── OBD → reacciones al estado del coche ─────────────────────────────
+        obd.update();
+        if (obd.isConnected() && (now - lastObdMs >= OBD_REACTION_COOLDOWN_MS)) {
+            if (obd.hasEngineError()) {
+                anim.triggerEvent(AnimEvent::AI_SERIOUS);
+                lastObdMs = now;
+            } else if (obd.getEngineTemp() > 95) {
+                anim.triggerEvent(AnimEvent::AI_SERIOUS);
+                lastObdMs = now;
+            } else if (obd.getRPM() > 4000) {
+                anim.triggerEvent(AnimEvent::AI_SURPRISED);
+                lastObdMs = now;
+            } else if (obd.getSpeed() > 120) {
+                anim.triggerEvent(AnimEvent::AI_SERIOUS);
+                lastObdMs = now;
+            }
+        }
+
         vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
@@ -100,6 +122,7 @@ void setup() {
     face.begin();
     sound.begin();
     imu.begin();
+    obd.begin();
     anim.begin();
     mic.begin();
 
