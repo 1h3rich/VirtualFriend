@@ -17,7 +17,7 @@
 | Secret | Descripción |
 |--------|-------------|
 | `GEMINI_API_KEY` | API key de Google Gemini (guardada en Escritorio/Proyecto/Api/Gemini.txt) |
-| `DEVICE_TOKEN` | `REDACTADO` |
+| `DEVICE_TOKEN` | `(ver src/Secrets.h — no publicar)` |
 
 > Los secrets NO están en el código. Están en Cloudflare de forma segura.
 
@@ -51,7 +51,7 @@ URL:     https://virtualfriend-worker.rykhjob.workers.dev
 
 ```
 Content-Type: application/json
-X-Device-Token: REDACTADO
+X-Device-Token: (ver src/Secrets.h — no publicar)
 ```
 
 ### Body (JSON)

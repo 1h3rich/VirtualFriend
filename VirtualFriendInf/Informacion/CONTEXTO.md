@@ -197,7 +197,7 @@ virtualfriend/
   - Worker en `~/Proyectos/virtualfriend-worker/`
   - URL pública: `https://virtualfriend-worker.rykhjob.workers.dev`
   - Secrets en Cloudflare: `GEMINI_API_KEY` y `DEVICE_TOKEN`
-  - DEVICE_TOKEN: `REDACTADO`
+  - DEVICE_TOKEN: `(ver src/Secrets.h — no publicar)`
   - IA: Gemini 2.5 Flash con thinking desactivado (`thinkingBudget: 0`)
   - Tests pasando (6/6)
   - Documentación en `Escritorio/Proyecto/cloudflare/CLOUDFLARE_WORKER.md`

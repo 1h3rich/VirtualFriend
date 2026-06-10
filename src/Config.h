@@ -34,10 +34,9 @@
 // Tiempo mínimo entre reacciones a datos OBD (ms)
 #define OBD_REACTION_COOLDOWN_MS 8000
 
-// --- WiFi ---
-#define WIFI_SSID    "REDACTADO"
-#define WIFI_PASS    "REDACTADO"
+// --- Credenciales (WiFi + token del worker) ---
+// Definidas en Secrets.h (gitignorado). Plantilla: Secrets.example.h
+#include "Secrets.h"
 
 // --- Cloudflare Worker ---
 #define WORKER_HOST  "virtualfriend-worker.rykhjob.workers.dev"
-#define WORKER_TOKEN "REDACTADO"
