@@ -7,7 +7,10 @@ movimiento del vehiculo (IMU) y al toque del usuario.
 ## Hardware
 
 - **M5Stack CoreS3** — pantalla tactil 320x240, altavoz AW88298, dos micros
-  ES7210, microSD, IMU BMI270, bateria, WiFi.
+  ES7210, microSD, IMU BMI270, bateria, WiFi, BLE.
+- **Dongle OBD2** (`dongle_obd2/`) — ESP32-C3 + transceptor CAN SN65HVD230.
+  Lee RPM, velocidad, temperatura, voltaje y testigo de averia del coche
+  (solo lectura, PIDs estandar) y los envia por BLE al CoreS3.
 
 ## Arquitectura
 
@@ -17,7 +20,19 @@ movimiento del vehiculo (IMU) y al toque del usuario.
                                            |-> OpenAI gpt-4o-mini / Whisper
                                            \-> ElevenLabs TTS
 [Touch]    -> MicTask   -> graba 3s WAV    -> AiTask -> Worker /listen
+
+[Coche OBD2] -> dongle (ESP32-C3 + SN65HVD230, TWAI 500kbps)
+                  \-> BLE notify "rpm=..;speed=..;coolant=..;volt=..;mil=.."
+                        \-> BleTask (CoreS3) -> OBDManager -> reacciones
 ```
+
+### Modos de simulacion
+
+- `src/Config.h: OBD_SIMULATION_MODE` — 1: el CoreS3 inventa los datos
+  (sin dongle). 0: los recibe del dongle por BLE.
+- `dongle_obd2/src/Config.h: DONGLE_SIMULATION_MODE` — 1: el dongle envia
+  datos plausibles sin CAN (permite probar la vinculacion BLE sin coche).
+  0: lectura real del bus CAN.
 
 ### Tareas FreeRTOS
 

@@ -2,6 +2,11 @@
 #include "Config.h"
 #include <M5Unified.h>
 
+#if !OBD_SIMULATION_MODE
+#include "BleObdClient.h"
+static BleObdClient s_ble;
+#endif
+
 OBDManager::OBDManager()
     : _connected(false), _rpm(0), _speed(0),
       _engineTemp(0), _engineError(false), _lastSimMs(0) {}
@@ -12,7 +17,8 @@ void OBDManager::begin() {
     Serial.println("[OBD] Modo simulacion activo");
 #else
     _connected = false;
-    Serial.println("[OBD] Esperando comunicador CAN");
+    s_ble.begin();
+    Serial.println("[OBD] Buscando dongle por BLE...");
 #endif
 }
 
@@ -27,11 +33,14 @@ void OBDManager::update() {
     _engineTemp = random(70, 105);
     _engineError = random(0, 100) >= 95;  // 5% de probabilidad de error
 #else
+    _connected = s_ble.isLinked();
     if (!_connected) {
         _rpm = 0; _speed = 0; _engineTemp = 0; _engineError = false;
         return;
     }
-    // TODO: lectura real por CAN
-    // Sustituir este bloque cuando llegue el comunicador CAN.
+    _rpm         = s_ble.getRPM();
+    _speed       = s_ble.getSpeed();
+    _engineTemp  = s_ble.getCoolantTemp();
+    _engineError = s_ble.getMilOn();  // testigo de avería del cuadro
 #endif
 }
