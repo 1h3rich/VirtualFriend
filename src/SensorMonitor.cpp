@@ -4,7 +4,7 @@
 SensorMonitor::SensorMonitor()
     : _ax(0), _ay(0), _az(0),
       _cax(0), _cay(0), _caz(0), _prevCay(0),
-      _lastEventMs(0), _lastEvent(SensorEvent::NONE), _imuOk(false) {}
+      _lastEventMs(0), _imuOk(false) {}
 
 void SensorMonitor::begin() {
     _imuOk = (M5.Imu.getType() != m5::imu_none);

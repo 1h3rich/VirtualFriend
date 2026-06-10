@@ -94,13 +94,13 @@ void controlTask(void* pvParams) {
             if (obd.hasEngineError()) {
                 anim.triggerEvent(AnimEvent::AI_SERIOUS);
                 lastObdMs = now;
-            } else if (obd.getEngineTemp() > 95) {
+            } else if (obd.getEngineTemp() > OBD_TEMP_ALERT_C) {
                 anim.triggerEvent(AnimEvent::AI_SERIOUS);
                 lastObdMs = now;
-            } else if (obd.getRPM() > 4000) {
+            } else if (obd.getRPM() > OBD_RPM_ALERT) {
                 anim.triggerEvent(AnimEvent::AI_SURPRISED);
                 lastObdMs = now;
-            } else if (obd.getSpeed() > 120) {
+            } else if (obd.getSpeed() > OBD_SPEED_ALERT_KMH) {
                 anim.triggerEvent(AnimEvent::AI_SERIOUS);
                 lastObdMs = now;
             }

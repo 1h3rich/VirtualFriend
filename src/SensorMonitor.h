@@ -25,6 +25,5 @@ private:
     float _prevCay;              // eje vertical anterior (para delta bache)
 
     uint32_t    _lastEventMs;
-    SensorEvent _lastEvent;
     bool        _imuOk;
 };

@@ -34,6 +34,11 @@
 // Tiempo mínimo entre reacciones a datos OBD (ms)
 #define OBD_REACTION_COOLDOWN_MS 8000
 
+// Umbrales de reacción a datos del coche
+#define OBD_TEMP_ALERT_C     95    // temperatura refrigerante alta
+#define OBD_RPM_ALERT        4000  // motor revolucionado
+#define OBD_SPEED_ALERT_KMH  120   // velocidad excesiva
+
 // --- Credenciales (WiFi + token del worker) ---
 // Definidas en Secrets.h (gitignorado). Plantilla: Secrets.example.h
 #include "Secrets.h"

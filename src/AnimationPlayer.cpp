@@ -294,7 +294,7 @@ void AnimationPlayer::_animTaskLoop() {
         } else {
             expr.setExpression(Expression::NEUTRAL);
             face.draw(expr.getParams());
-            AnimEvent ev;
+            AnimEvent ev = AnimEvent::NONE; // el receive puede expirar sin escribir
             xQueueReceive(_eventQueue, &ev, pdMS_TO_TICKS(50));
             if (ev == AnimEvent::NONE) continue;
             xQueueSendToFront(_eventQueue, &ev, 0);

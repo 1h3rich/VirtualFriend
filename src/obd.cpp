@@ -25,7 +25,7 @@ void OBDManager::update() {
     _rpm        = random(800, 4500);
     _speed      = random(0, 130);
     _engineTemp = random(70, 105);
-    _engineError = random(0, 100) > 95;  // ~5% de probabilidad de error
+    _engineError = random(0, 100) >= 95;  // 5% de probabilidad de error
 #else
     if (!_connected) {
         _rpm = 0; _speed = 0; _engineTemp = 0; _engineError = false;
