@@ -17,8 +17,7 @@ movimiento del vehiculo (IMU) y al toque del usuario.
 ```
 [IMU/Touch] -> CtrlTask -> AnimTask  (cara animada en SD)
                        \-> AiTask   -> Cloudflare Worker
-                                           |-> OpenAI gpt-4o-mini / Whisper
-                                           \-> ElevenLabs TTS
+                                           \-> Google Gemini (texto + audio MP3)
 [Touch]    -> MicTask   -> graba 3s WAV    -> AiTask -> Worker /listen
 
 [Coche OBD2] -> dongle (ESP32-C3 + SN65HVD230, TWAI 500kbps)
@@ -50,9 +49,10 @@ pantalla.
 ## Estructura
 
 ```
-src/
+src/                    firmware del M5Stack CoreS3
   main.cpp              entrypoint, setup y CtrlTask
-  Config.h              umbrales IMU, credenciales WiFi/Worker
+  Config.h              umbrales IMU/OBD, modo simulacion, include de Secrets.h
+  Secrets.example.h     plantilla de credenciales (copiar como Secrets.h)
   AnimationPlayer.*     reproduccion de GIFs + fallback vectorial
   FaceRenderer.*        cara vectorial cuando no hay SD
   ExpressionManager.*   parametros de expresion (ojos, boca, color)
@@ -61,8 +61,42 @@ src/
   SpeechManager.*       decode MP3 (minimp3) + reproduccion
   AiManager.*           cliente HTTP del Worker, gestiona expresiones IA
   SoundManager.*        beeps de eventos y alertas
+  BleObdClient.*        cliente BLE que recibe los datos del dongle
+  obd.*                 OBDManager: parseo de datos y reacciones
   minimp3.h             header-only MP3 decoder
+
+dongle_obd2/            firmware del dongle (ESP32-C3): CanManager,
+                        ObdReader, BleServer y su propio Config.h
+carcasa/                diseno de la carcasa en OpenSCAD + previews + PDF
+FreeCad/                prototipo de la carcasa en FreeCAD
+VirtualFriendInf/       documentacion del proyecto (ver abajo)
 ```
+
+## Carcasa
+
+Diseno parametrico en OpenSCAD (`carcasa/virtualfriend_carcasa.scad`), en dos
+piezas: cuerpo principal con ventana de pantalla y rejilla de altavoz, y tapa
+trasera atornillada (M3). Inclinada 8 grados hacia el conductor, con zocalo
+para velcro/adhesivo. Detalles en `carcasa/DISENO_TECNICO.md` y renders en
+`carcasa/previews/`.
+
+## Documentacion (`VirtualFriendInf/`)
+
+- `Informacion/CONTEXTO.md` — contexto completo del proyecto y estado por fases.
+- `Manuales/` — manual de montaje de la maquina de diagnosis (v2), manual del
+  dongle OBD2 y manual de soldadura.
+- `Diagramas/` — diagrama de cableado y del transceptor CAN.
+- `cloudflare/` — documentacion del Worker (endpoints y despliegue).
+- `PuntosFD/` — revisiones del proyecto.
+
+## Credenciales
+
+Los valores reales nunca se suben al repositorio:
+
+1. Copia `src/Secrets.example.h` como `src/Secrets.h` (esta en `.gitignore`)
+   y rellena el SSID/contrasena WiFi y el token del dispositivo.
+2. Los secrets del Worker (`GEMINI_API_KEY`, `DEVICE_TOKEN`) se guardan en
+   Cloudflare con `wrangler secret put`, nunca en el codigo.
 
 ## Compilar y subir
 

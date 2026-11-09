@@ -1,0 +1,8 @@
+{
+  "allowlist": [
+    {
+      "reason": "Cloudflare Worker env var reference, not a hardcoded key",
+      "pattern": "OPENAI_KEY"
+    }
+  ]
+}

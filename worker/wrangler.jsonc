@@ -1,0 +1,19 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "virtualfriend-worker",
+	"main": "src/index.js",
+	"compatibility_date": "2026-06-03",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"kv_namespaces": [
+		{
+			"binding": "RATE_KV",
+			"id": "69cbfd0312cb4885b4ca57c0381609e3"
+		}
+	],
+	"vars": {
+		"DAILY_LIMIT": "200"
+	}
+}
